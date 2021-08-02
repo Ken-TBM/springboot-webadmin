@@ -1,0 +1,17 @@
+Redis
+自动配置
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+自动配置：
+1.RedisAutoConfiguration自动配置类，RedisProperties属性类
+-->spring.redis.xxx是对redis的配置
+连接工厂是准备好的
+LettuceConnectionConfiguration、JedisConnection
+RedisTemplate<Object,Object>:xxxTemplate；
+StringRedisTemplate：k:V都是String
+Key:value
+底层只要我们使用StringRedis
+
+redis环境搭建

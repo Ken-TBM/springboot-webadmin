@@ -1,0 +1,95 @@
+SQL：
+1、数据源的自动配置
+    1.导入jdbc场景
+             <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-jdbc</artifactId>
+             </dependency>
+             有 数据源 jdbc 事务
+    数据库驱动？为什么不导入驱动？官方不知道我们接下来要操作什么数据库。
+    数据库的版本要和驱动版本对应
+    导入mysql驱动
+            <dependency>
+                <groupId>mysql</groupId>
+                <artifactId>mysql-connector-java</artifactId>
+                <version>5.1.37</version>
+            </dependency>
+    想要修改版本
+        1.直接依赖引入具体版本（maven就近原则）
+        2.重新声明版本（maven的属性的就近原则）
+        <properties>
+            <java.version>1.8</java.version>
+            <mysql.version>5.1.49</mysql.version>
+        </properties>
+
+    2.分析自动配置
+    .DataSourceAutoConfiguration：数据源的自动配置
+        .修改数据源相关的配置：spring.dataSource
+        .数据库连接池的配置，是自己容器中没有DataSource才自动配
+        .底层配置好的连接池是：HikariDataSource
+    .JdbcTemplateAutoConfiguration:JdbcTemplate的自动配置，可以来对数据库进行CRUD
+        .可以修改配置项@ConfigurationProperties("spring.jdbc")来修改jdbcTemplate
+        .@Bean@Primary jdbcTemplate;容器中有这个组件
+    .DataSourceTransactionManagerAutoConfiguration：事务管理器的自动配置
+
+
+
+使用官方Starter方式
+1、引入druid-starter
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>druid-spring-boot-starter</artifactId>
+                <version>1.1.17</version>
+            </dependency>
+
+2、分析自动配置
+.扩展配置项 spring.dataSource.druid
+.DruidStatViewAopConfiguration,监控SpringBean的；配置项：spring.datasource.druid.aop-patterns
+.DruidStaViewServletConfiguration.class,监控页的配置：spring.datasource.druid.stat-view-servlet
+.DruidWebStatFilterConfiguration.class,web监控配置spring.datasource.druid.web-stat-filter
+.DruidFilterConfiguration.class 所有Druid自己filter的配置
+
+
+3、整合MyBatis操作
+starter
+springBoot官方的Starter:spring-boot-starter-*
+
+1.配置模式
+.全局配置文件
+.SqlSessionFactory：自动配置了
+.SqlSession：自动配置了sqlSessionTemplate组合了SqlSession
+.Mapper ：只要我们写的操作MyBatis的接口标注了Mapper注解就会被自动扫描进来
+
+@EnableConfigurationProperties(MybatisProperties.MYBATIS_PREFIX)
+@AutConfigureAfter(DataSourceConfiguration.class,MybatisLanguageDriverConfiguration.class)
+public class MyBatisAutoConfiguration{}
+可以修改配置文件中，mybatis开始中的所有
+
+mapper接口---绑定xml
+配置private Configuration configuration；mybatis.configuration 下面的所有，就相当于
+改mybatis全局配置文件的值
+
+.导入mybatis官方starter
+.编写mapper接口 标注@mapper注解
+.编写sql映射文件并绑定mapper接口
+.在application.yml中指定Mapper配置文件的位置 以及指定全局配置文件信息（建议：直接配在mybatis.configuration）
+
+
+4、整合Mybatis-Plus
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-boot-starter</artifactId>
+            <version>3.4.1</version>
+        </dependency>
+自动配置
+.MybatisPlusAutoConfiguration 配置类，MybatisPlusProperties配置项绑定
+mybatis-plus：xxx就是对mybatis-plus的定制
+.SqlSessionFactory自动配置好了 底层是容器中默认的数据源
+mapperLocations自动配置好了 有默认值 classpath:*/mapper/**/*.xml;任意包的路径下的所有mapper
+文件夹下的所有xml都是sql映射文件。建议以后sql映射文件，放在mapper下
+.容器中也自动配置好了SqlSessionTemplate
+.@Mapper标注的接口也会被自动扫描;建议直接@MapperScan("com.kenproject.admin.mapper")
+优点：
+   .只需要我们的Mapper继承BaseMapper就可以拥有crud能力
+
+

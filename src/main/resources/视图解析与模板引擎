@@ -1,0 +1,35 @@
+视图解析
+
+            ----->转发
+视图处理方法  ----->重定向
+            ----->自定义视图
+
+1、视图解析原理流程
+    1.目标方法执行过程中，所有数据都会被放在ModelAndContainer容器中。包括数据和地址
+    2.如果我们参数是一个自定义类型对象（从请求参数中确定的），把它重新放在ModelAndViewContainer
+    3.任何目标方法执行完成以后都会返回ModelAndView对象（数据和地址）。
+    4.processDispatchResult处理派发结果(页面该如何响应)
+        .1、render(mv,request,response);进行页面渲染逻辑
+            （1）根据方法的String返回值得到View对象【定义了页面的渲染逻辑】
+                 -1.所有的视图解析器尝试是否能根据当前返回值得到View对象
+                     遍历5个ViewResolver
+                     0-ContentNegotiationViewResolver
+                     1-BeanNameViewResolver
+                     2-ThymeleafViewResolver
+                     3-ViewResolverComposite
+                     4-InternalResourceViewResolver
+                 -2.根据视图解析器得到了redirect:/main.html--->Thymeleaf view=new RedirectView()
+                 -3.ContentNegotiationViewResolver里面包含了所有的视图解析器，内部还是利用下面所有视图
+                 解析器得到所有视图对象。
+                 -4.视图对象调用它自定义的render进行页面渲染工作 view是一个接口
+                 view.render(mv.getModelInternal(),request,response);
+                        .RedirectView 如何渲染[重定向到一个页面]
+                            1.获取目标的url地址
+                            2.response.sendRedirect(encodedURL);
+        视图解析：
+        返回值以forward开始：new InternalResourceView(forwardUrl); 转发
+        ---> request.getRequestDispatcher(path).forward(request,response);
+        返回值以Redirect开始：new RedirectView(); render就是重定向
+        返回值是普通字符串：直接new ThymeleafView()--->
+
+        自定义解析器+自定义视图

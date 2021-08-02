@@ -1,0 +1,76 @@
+异常处理
+1、错误处理
+.默认情况下，spring Boot提供/error 处理包括所有错误的映射
+.对于机器客户端，它将生成JSON响应，其中包含错误信息，HTTP状态和异常信息的详细信息，对于浏览器客户端
+响应一个"whitelabel"错误视图，HTML格式呈现相同的数据
+.要对其进行自定义，添加view解析为error
+.要完全替换默认行为，可以实现ErrorController 并注册该类型的Bean定义，或添加ErrorAttribute类型的
+组件以使用现有机制但替换其内容
+2、定制错误处理逻辑
+.自定义错误页面
+    。error/404.html error/5xx.html；有精确的错误信息页面就精确匹配，没有就找4XX.html;如果没有
+    就出发白页
+
+.@Conrtroller+@ExcepetionHandler处理全局异常；底层是ExceptionHandlerExceptionResolver支持的
+
+.ResponseStatus+自定义异常;底层是ResponseStatusExceptionResolver，把responseStatus注解的信息
+组装成ModelAndView返回；底层调用response.setError(statusCode,resolveReason);tomcat发送的/error
+
+.spring底层的异常，如 参数类型转换异常 DefaultExceptionResolver处理框架底层的异常
+    response.sendError(HttpServletResponse.SC_BAD_REQUEST,ex.getMessage());
+
+.实现HandleExceptionResolver 处理异常；可以作为默认的全局处理规则
+
+ErrorViewResolver 实现自定义处理异常
+    response.sendError error请求就会给controller
+    异常没有任何人处理，tomcat底层 response.sendError error请求转给Controller
+    basicErrorController 要去的页面地址是 ErrorViewResolver
+
+
+3、异常处理自动配置原理
+.ErrorAutoConfiguration 自动配置异常处理规则
+    容器组件：类型：DefaultErrorAttribute->id：errorAttributes
+        public class DefaultAttributes implements ErrorAttribute,HandlerExceptionResolver
+        DefaultErrorAttribute：定义错误页面中可以包含哪些数据
+    容器中的组件：类型：BasicErrorController--->id: basicErrorController()
+        处理默认/error路径请求；页面响应 new ModelAndView("error",model);
+        容器中有组件View->id是error：响应默认错误页面
+        容器中放组件 BeanNameViewResolver（视图解析器）；按照返回的视图名作为组件的id去容器中找view对象
+    容器中的组件：类型DefaultErrorViewResolver（视图解析器）：按照返回的视图名作为组件的id去容器中找view对象
+        如果发生错误，会以Http的状态码作为视图页地址（viewName），找到真正的页面
+        error/404、5xx.html
+如果想要返回页面；就会找error【StaticView】(默认是个白页)
+
+@RequestMapping(produces = MediaType.TEXT_HTML_VALUE)
+	public ModelAndView errorHtml(HttpServletRequest request, HttpServletResponse response) {
+		HttpStatus status = getStatus(request);
+		Map<String, Object> model = Collections
+				.unmodifiableMap(getErrorAttributes(request, getErrorAttributeOptions(request, MediaType.TEXT_HTML)));
+		response.setStatus(status.value());
+		ModelAndView modelAndView = resolveErrorView(request, response, status, model);
+	    //自定义错误页，叫error就行
+		return (modelAndView != null) ? modelAndView : new ModelAndView("error", model);
+	}
+
+public ResponseEntity<Map<String, Object>> error(HttpServletRequest request) {}
+
+4、异常处理步骤
+    1.执行目标方法，目标方法运行期间有任何异常都会被catch、而且标志当前请求结束；并且用dispatcherException
+    2.进入视图解析流程（页面渲染）
+    processDispatchResult(processedRequest,response,mappedHandler,mv,dispatchException);
+    3.mv=processHandlerException;处理handler发生的异常，处理完成返回ModelAndView
+        .遍历所有的handlerExceptionResolvers，看谁能处理当前信息【HandlerExceptionResolver处理器异常解析器】
+        .系统默认的异常解析器
+            this.handlerExceptionResolver={ArrayList}
+            0=DefaultErrorAttribute
+            1=HandlerExceptionResolverComposite
+                0=
+                1=
+                2=
+        1.DefaultErrorAttribute先来处理异常，把异常信息保存到request域，并且返回null
+        2.默认没有任何人能处理异常，所有异常会被抛出
+        3.如果没有任何人能处理最终底层会发送/error请求
+                会被底层的BasicErrorController处理
+                解析错误视图 遍历所有的ErrorViewResolver
+                默认的DefaultErrorViewResolver，作用是把响应状态码作为错误页的地址，（拼接成）error/500.html
+                模板引擎最终响应这个页面

@@ -1,0 +1,12 @@
+文件上传解析器
+自动配置原理-MultipartAutoConfiguration-MultipartProperties
+.自动配置好了 StandardServletMultipartyResolver 【文件上传解析器】
+.@ConfigurationProperties(prefix = "spring.servlet.multipart", ignoreUnknownFields = false)
+ public class MultipartProperties {}
+.原理步骤
+    1.请求参数进来使用文件上传解析器（isMultipart）并封装（resolveMultipart，并返回MultipartHttpServletRequest）
+    RequestPartMethodArgumentResolver
+    文件上传请求
+    2.参数解析器来解析请求中的文件内容封装成MultipartFile
+    3.将request中文中文件信息封装为一个Map；MultiValueMap<String,MultipartFile>
+    FileCopyUtils，实现文件流的拷贝

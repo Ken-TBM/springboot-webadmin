@@ -1,0 +1,19 @@
+拦截器原理：
+1、根据当前请求，找到可以处理请求的handlerExecutionChain
+【可以处理请求的handler以及handel的所有拦截器】
+2、 先来顺序执行所有拦截器的preHandel方法
+    .如果当前拦截器preHandel返回为true，则执行下一个拦截器的preHandle
+    .如果下一个拦截器返回为after，直接倒序执行所有已经执行了的拦截器的afterCompletion
+3、如果任何一个拦截器执行失败，返回false直接跳出 不执行目标方法
+4、所有拦截器都返回true，执行目标方法
+5、倒序执行所有拦截器的postHandel
+6、前面的步骤有任何异常都会直接触发afterCompletion
+7、页面成功渲染完成之后也会倒序触发afterCompletion
+
+永远都会触发已经执行了的所有的拦截器的afterCompletion
+
+||     preHandle ->              ||        preHandle ->    ||    ->  目标方法
+
+||       <- postHandle           ||        <- postHandle    ||
+
+||      <-afterCompletion        ||        <-afterCompletion  ||
